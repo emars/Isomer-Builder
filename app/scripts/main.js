@@ -16,8 +16,8 @@ function createRowX(length, direction, y, z, size){
 
 function createPoints(){
     var points = [];
-    for (var j = 0; j < 1; j+=1){
-        for (var i = 3; i > 0; i-=1){
+    for (var j = -1; j < 1; j+=0.25){
+        for (var i = 3; i > 0; i-=0.25){
           var point = {
             x: i,
             y: 3,
@@ -25,7 +25,7 @@ function createPoints(){
           };
           points.push(point);
         }
-        for (i = 2; i > 0; i-=1){
+        for (i = 2.75; i > 0; i-=0.25){
           var point = {
             x:3,
             y:i,
@@ -33,7 +33,7 @@ function createPoints(){
           };
           points.push(point);
         }
-        for (i = 3; i > -0; i-=1){
+        for (i = 3; i > -0; i-=0.25){
           var point = {
             x:0,
             y:i,
@@ -41,7 +41,7 @@ function createPoints(){
           };
           points.push(point);
         }
-        for (var i = 3; i > -1; i-=1){
+        for (var i = 3; i > -0.25; i-=0.25){
           var point = {
             x: i,
             y: 0,
