@@ -135,4 +135,4 @@ var IsomerBuilder = function(div){
   this.stop = function(){
     clearInterval(self._intervalId);
   };
-}();
+};
