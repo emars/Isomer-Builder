@@ -9,20 +9,6 @@ $(document).ready(function(){
   builder = new Builder('isomer-builder');
 
   //PIANO KEYBOARD
-  var settings = {
-    coords: function(t){
-      var x = linear(t + this.startTime, 1, 5, 3000 + this.startTime);
-      var y = outExpo(t + this.startTime, 1, 5, 3000 + this.startTime);
-      return {
-        x:x,
-        y:y,
-        z:1
-      };
-    },
-    startTime: 0,
-    endTime: 5000
-  };
-  var entity = new Entity(settings);
 
   builder.build([blockFour,
     blockTwo,

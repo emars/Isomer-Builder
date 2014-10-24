@@ -1,138 +1,147 @@
-var IsomerBuilder = function(div){
-  this.div = div;
-  var Point = Isomer.Point;
-  var Path = Isomer.Path;
-  var Shape = Isomer.Shape;
-  var Color = Isomer.Color;
-  var self = this;
-  this.bg = document.createElement('canvas');
-  this.bg.width = 800;
-  this.bg.height = 600;
-  this.bg.style.position = "absolute";
-  this.bg.ctx = this.bg.getContext('2d');
-  this.bg.ctx.fillRect(0,0,800,600,"#000000");
-  this.bg.style["z-index"] = "0";
-  this.fg = document.createElement('canvas');
-  this.fg.width = 800;
-  this.fg.height = 600;
-  this.fg.style.position = "absolute";
-  this.fg.style["z-index"] = "1";
-  div.appendChild(this.fg);
-  div.appendChild(this.bg);
-  this.isobg = new Isomer(this.bg);
-  this.isofg = new Isomer(this.fg);
+var ISOMERBUILDER = function(){
+  var Builder = function(id){
+    self = this;
+    parseDiv(id);
 
-  var Cube = function(coords, startTime, color, scale){
-    this.coords = coords;
-    this.startTime = startTime;
-    this.color = color;
-    this.scale = scale;
-  };
+    //PRIVATE
+    function parseDiv(id){
+      self.div = document.getElementById(id);
+      var width = self.div.offsetWidth;
+      var height = self.div.offsetHeight;
+      createCanvases(width, height);
+    }
 
-  this._buildShape = function(cube, t){
-    return self._settings.shape.scale(Point.ORIGIN,
-      cube.scale.x,
-      cube.scale.y,
-      cube.scale.z)
-      .translate(cube.coords.x, cube.coords.y,
-      self._settings.easing(t - cube.startTime,5,-5+cube.coords.z,1));
-  };
-
-  this._placeShape = function(cube){
-    return self._settings.shape.scale(Point.ORIGIN,
-      cube.scale.x,
-      cube.scale.y,
-      cube.scale.z)
-      .translate(cube.coords.x, cube.coords.y, cube.coords.z);
-  };
-
-  this._render = function(cubes, elapsedTime){
-    var removefg = [];
-    for(var i = 0; i < self.cubes.length; i++){
-      var currentCube = self.cubes[i];
-      if (elapsedTime > currentCube.startTime){
-        self.isofg.add(self._buildShape(currentCube, elapsedTime), self._settings.color);
-      }
-      if (elapsedTime > (currentCube.startTime + 1)){
-        self.isobg.add(self._placeShape(currentCube))
-        removefg.push(i);
-      }
+    function createCanvases(width, height){
+      self.bg = createCanvas(width, height, 0);
+      self.fg = createCanvas(width, height, 1);
+      self.isobg = new Isomer(self.bg);
+      self.isofg = new Isomer(self.fg);
+      self.div.appendChild(self.bg);
+      self.div.appendChild(self.fg);
     };
-    for(var i = 0; i < removefg.length; i++){
-      self.cubes.splice(removefg[i], 1);
-    }
+
+    function createCanvas(width, height, index){
+      var canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style['position'] = 'absolute';
+      canvas.style['z-index'] = String(index);
+      canvas.style['text-align'] = 'left';
+      return canvas;
+    };
   };
 
-  this._scene = function(){
-    self.canvas.width = self.canvas.width;
-    self._render(self.shapes, self.time);
-    self.time += 1.0 / self._settings.fps;
-  };
-
-
-  this.build = function(shapes, settings){
-    //declare default settings
-    if (typeof settings === 'undefined'){
-      var settings = {
-        color: new Isomer.Color(50, 60, 160),
-        scale:{
-          x: 1,
-          y: 1,
-          z: 1
-        } ,
-        shape: Shape.Prism(Point.ORIGIN, new Isomer.Color(50, 60, 160)),
-        //easeOutExpo
-        easing: function (t, b, c, d) {
-          return (t>=d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
-        },
-
-
-        interval: 0.10,
-        fps: 30
-      };
-    }
-
-    self.time = 0;
-    self._settings = settings;
-
-    self.cubes = [];
-    self.timeCounter = 0;
-    for (var i = 0; i < shapes.length; i++){
-      var p = shapes[i];
-      var coords = {
-        x: p.x,
-        y: p.y,
-        z: p.z
-      };
-      if (! p.scale){
-        p.scale = {
-          x: 0.25,
-          y: 0.25,
-          z: 0.25
-        };
-      }
-      self.cubes.push(new Cube(coords, self.timeCounter, self._settings.color, p.scale));
-      self.timeCounter += self._settings.interval;
-    }
-
-
-    self.totalTime = 0;
-    var time;
-    var draw = function(){
-      requestAnimationFrame(draw);
-      var now = new Date().getTime(),
+  Builder.prototype = {
+    build: function(entities, settings){
+      this.entities = entities;
+      parseEntities(entities);
+      var i, x, currentEntity, time = 0, self=this;
+      this.totalTime = 0;
+      var draw = function(){
+        requestAnimationFrame(draw);
+        var now = +new Date(),
           dt = now - (time || now);
+        time = now;
+        self.totalTime += dt;
+        clearCanvas();
+        render(entities, self.totalTime);
+      }
 
-      time = now;
-      self.time += parseFloat(dt) / 1000;
-      self.fg.width = self.fg.width;
-      self._render(self.shapes, self.time);
+      draw();
+
+      //PRIVATE
+      function parseEntities(entities){
+        var currentEntity;
+        var defaultColor = function(){ return {r:100,g:100,b:100}; };
+        var defaultScale = function(){ return {x:0.25,y:0.25,z:0.25}; };
+        var defaultRotate = function(){ return {x:0,y:0,z:0}; };
+        for(var i = 0, x = entities.length; i < x; i++){
+          currentEntity = entities[i];
+          currentEntity.color = currentEntity.color || defaultColor;
+          currentEntity.scale = currentEntity.scale || defaultScale;
+          currentEntity.rotate = currentEntity.rotate || defaultRotate;
+        }
+      }
+
+      function clearCanvas(){
+        self.fg.width = self.fg.width;
+      }
+
+      function render(entities, time){
+        var shape = Isomer.Shape.Prism(Isomer.Point.ORIGIN);
+        var currentEntity;
+        for(var i = 0, x = entities.length; i < x; i++){
+          currentEntity = entities[i];
+          build(currentEntity, time, shape);
+        }
+      }
+
+      function build(entity, t, shape){
+        if (t < entity.startTime || t > entity.endTime) return;
+        var c = entity.coords(t);
+        var cl = entity.color(t);
+        var s = entity.scale(t);
+        var r = entity.rotate(t);
+        self.isofg.add(
+          shape
+            .scale(Isomer.Point.ORIGIN,s.x,s.y,s.z)
+            .translate(c.x,c.y,c.z)
+        , new Isomer.Color(cl.r, cl.g,cl.b));
+      }
+    },
+
+    alterEntity: function(entityIndex, settings){
+      var entity = this.entities[entityIndex];
+      for (index in settings){
+            entity[index] = settings[index];
+      }
     }
-
-    draw();
   };
 
-  this.stop = function(){
-    clearInterval(self._intervalId);
+  var Entity = function(settings){
+    this.color = settings.color;
+    this.coords = settings.coords;
+    this.shape = settings.shape;
+    this.scale = settings.scale;
+    this.rotate = settings.rotate;
+    this.startTime = settings.startTime;
+    this.endTime = settings.endTime;
+    this.stopTime = settings.stopTime;
   };
-};
+
+  Entity.prototype = {
+    outExpo: function (t, b, c, d) {
+      return (t>=d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+    },
+    linear: function(t, b, c, d){
+      return (t>=d) ? b+c : c * t/d + b;
+    },
+    linearFB: function(t, b, c, d){
+      if (t <= d / 2){
+        return c * 2*t/d + b;
+      }
+      return (t>=d) ? b+c : c*t/d + b;
+    }
+  };
+
+  var Tweens = {
+    outExpo: function (t, b, c, d) {
+      return (t>=d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+    },
+    linear: function(t, b, c, d){
+      return (t>=d) ? b+c : c * t/d + b;
+    },
+    linearFB: function(t, b, c, d){
+      if (t <= d / 2){
+        return c * 2*t/d + b;
+      }
+      return (t>=d) ? b :b+c - 2*c*(t/2)/d;
+    }
+  };
+
+  return {
+    Entity: Entity,
+    Builder: Builder,
+    Tweens: Tweens
+  };
+}();
